@@ -1,4 +1,4 @@
-# CLI
+# Ordoclic CLI
 
 A command-line interface (CLI) for managing professionals, entities, and drugbase licenses via the Ordoclic Partner API.
 
@@ -48,7 +48,7 @@ The CLI uses a configuration file located at:
 
 ---
 
-## 🌐 Language
+## 🔤 Language
 
 The CLI supports two languages: **English (`en`)** and **French (`fr`)**.
 
@@ -65,6 +65,10 @@ ordoclic --lang=fr professional create --file pro.json
 
 ## 🚀 Commands
 
+### Silent mode
+
+Use the `--silent` option to disable all intermediate logs and display only the final JSON output.
+
 ### ⚠️ Version check & interactive blocking
 
 Before any command is executed (except `version`), the CLI checks
@@ -74,11 +78,10 @@ whether a more recent version of Ordoclic is available.
     **blocks** execution.
 -   If the local version is **behind**, the CLI asks for confirmation:
 
-```{=html}
-<!-- -->
 ```
-    A newer version is available.
-    Continue? [y/N]
+A newer version is available.
+Continue? [y/N]
+```
 
 To skip this confirmation automatically (e.g. for CI pipelines):
 
@@ -109,7 +112,7 @@ Retrieve an authentication token for a professional using their RPPS
 number.
 
 ```bash
-ordoclic auth get --rpps 12345678901
+ordoclic auth get [--rpps 12345678901] [--entity-id 5ef5a4ed-ded6-4fe3-91d6-e61a9d9844dc]
 ```
 
 You may also define the RPPS value in the configuration file and omit
@@ -136,17 +139,23 @@ ordoclic professional create --file pro.json
 ordoclic professional create --file pro.json --should-notify
 ```
 
+See [documentation](https://ordoclick.atlassian.net/wiki/spaces/DE/pages/1037860873/Commencer+avec+l+API+ordoclic#Exemple.2).
+
 #### Get a professional by ID
 
 ```bash
 ordoclic professional get <professional_id>
 ```
 
+`professional_id` can be either the professional's UUID or their RPPS number.
+
 #### Set a drugbase license (e.g., VIDAL)
 
 ```bash
 ordoclic professional set drugbase <professional_id> vidal --config='{"app_id":"...","app_key":"..."}'
 ```
+
+`professional_id` can be either the professional's UUID or their RPPS number.
 
 Expected API call:
 ```
@@ -157,6 +166,19 @@ PUT /drugbase/v1/professionals/{professionalId}/drugbase-setting
   "config": { "app_id": "...", "app_key": "..." }
 }
 ```
+
+#### Professional management
+
+<!--ordoclic professional delete <professional_id> [--email=<email>]-->
+```bash
+
+# From stdin
+ordoclic professional deactivate <professional_id> [--reason "some reason"]
+
+ordoclic professional activate <professional_id>
+```
+
+<!--In delete command, if an email is set, then send an email at the end of processing with answer-->
 
 ---
 
@@ -197,6 +219,8 @@ ordoclic entity add professional --entity-id=aaaa-bbbb-cccc dddd-eeee ffff-gggg
 ordoclic entity add professional --entity-id=aaaa-bbbb --file pros.json
 ```
 
+`professional_ids` can be either the professional's UUID or their RPPS number.
+
 Example `pros.json`:
 
 ```json
@@ -205,6 +229,32 @@ Example `pros.json`:
     "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
     "11111111-2222-3333-4444-555555555555"
   ]
+}
+```
+
+---
+
+### 🌐 Global API call
+
+You can also make another API call with:
+
+```bash
+# From stdin
+ordoclic api [--rpps=12345678901] < api_call.json
+# From file
+ordoclic api [--rpps=12345678901] --file api_call.json
+```
+
+Given file must following format:
+```json
+{
+  "method": "POST",
+  "url": "/v1/pro/patients/search",
+  "body": {
+    "last_name": "Dupont",
+    "first_name": "Marie",
+    "birth_date": "1985-01-12"
+  }
 }
 ```
 
@@ -230,12 +280,3 @@ Example localized error:
 ```
 ❌ Failed to load configuration: unable to locate config directory
 ```
-
----
-
-## ⚠️ Exit codes
-
-| Code | Meaning |
-|------|----------|
-| `0` | Success |
-| `1` | Generic error (invalid input, API failure, etc.) |
